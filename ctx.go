@@ -2,6 +2,7 @@ package goproxy
 
 import (
 	"net/http"
+	"net/url"
 	"regexp"
 )
 
@@ -37,6 +38,22 @@ func (ctx *ProxyCtx) RoundTrip(req *http.Request) (*http.Response, error) {
 	if ctx.RoundTripper != nil {
 		return ctx.RoundTripper.RoundTrip(req, ctx)
 	}
+
+	proxyHeader := req.Header.Get("X-Proxy")
+	req.Header.Del("X-Proxy")
+
+	if len(proxyHeader) > 0 {
+		proxyURL, err := url.Parse(proxyHeader)
+		if err == nil {
+			tr := &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
+			}
+			tr.Dial = ctx.proxy.Tr.Dial
+
+			return tr.RoundTrip(req)
+		}
+	}
+
 	return ctx.proxy.Tr.RoundTrip(req)
 }
 
