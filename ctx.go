@@ -48,13 +48,16 @@ func (ctx *ProxyCtx) RoundTrip(req *http.Request) (*http.Response, error) {
 			tr := &http.Transport{
 				Proxy: http.ProxyURL(proxyURL),
 			}
-			tr.Dial = ctx.proxy.Tr.Dial
+			tr.Dial = ctx.proxy.Tr.Dial // Is this even needed? Might be causing a weird response delay problem (see comment below)
 
 			return tr.RoundTrip(req)
 		}
 	}
 
-	return ctx.proxy.Tr.RoundTrip(req)
+	// return ctx.proxy.Tr.RoundTrip(req)
+	// Fixes weird response issue by NOT using ctx.proxy.Tr
+	tr := &http.Transport{}
+	return tr.RoundTrip(req)
 }
 
 func (ctx *ProxyCtx) printf(msg string, argv ...interface{}) {
